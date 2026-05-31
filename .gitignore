@@ -1,0 +1,15 @@
+.env
+*.env
+data/
+logs/
+*.log
+*.db
+*.sqlite
+*.sqlite3
+*.tar
+*.zip
+__pycache__/
+*.pyc
+.cache/
+.DS_Store
+node_modules/

@@ -1,0 +1,59 @@
+services:
+  astrbot:
+    image: soulter/astrbot:latest
+    container_name: astrbot
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "${ASTRBOT_WEBUI_PORT:-6185}:6185"
+      - "${ASTRBOT_ONEBOT_WS_PORT:-6199}:6199"
+    environment:
+      - TZ=${TZ:-Asia/Shanghai}
+    volumes:
+      - ./data/astrbot:/AstrBot/data
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - astrbot_network
+
+  shipyard:
+    image: soulter/shipyard-bay:latest
+    container_name: astrbot_shipyard
+    restart: always
+    environment:
+      - PORT=8156
+      - DATABASE_URL=sqlite+aiosqlite:///./data/bay.db
+      - ACCESS_TOKEN=${SHIPYARD_ACCESS_TOKEN}
+      - MAX_SHIP_NUM=${SHIPYARD_MAX_SHIP_NUM:-10}
+      - BEHAVIOR_AFTER_MAX_SHIP=reject
+      - DOCKER_IMAGE=soulter/shipyard-ship:latest
+      - DOCKER_NETWORK=astrbot_network
+      - SHIP_DATA_DIR=/app/ship_mnt_data
+      - DEFAULT_SHIP_CPUS=${SHIPYARD_DEFAULT_CPUS:-1.0}
+      - DEFAULT_SHIP_MEMORY=${SHIPYARD_DEFAULT_MEMORY:-512m}
+    volumes:
+      - ./data/shipyard/bay_data:/app/data
+      - ./data/shipyard/ship_mnt_data:/app/ship_mnt_data
+      - ./data/temp:/AstrBot/data/temp
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - astrbot_network
+
+  napcat:
+    image: mlikiowa/napcat-docker:latest
+    container_name: napcat
+    restart: always
+    ports:
+      - "${NAPCAT_ONEBOT_PORT:-6099}:6099"
+      - "${NAPCAT_WEBUI_PORT:-3001}:3001"
+    environment:
+      - ACCOUNT=${NAPCAT_ACCOUNT}
+    volumes:
+      - ./data/napcat:/app/.config
+    networks:
+      - astrbot_network
+
+networks:
+  astrbot_network:
+    name: astrbot_network
+    driver: bridge
