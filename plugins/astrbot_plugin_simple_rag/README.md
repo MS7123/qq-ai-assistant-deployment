@@ -29,6 +29,13 @@
 /kblist 50
 ```
 
+调试检索：
+
+```text
+/kbsearch 你的问题
+/kbshow k3
+```
+
 清空知识库：
 
 ```text

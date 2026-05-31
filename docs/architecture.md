@@ -38,7 +38,7 @@ QQ 用户
   -> 基于资料生成回答
 ```
 
-`astrbot_plugin_simple_rag` 是第一版 RAG 学习实现，先使用本地关键词检索跑通知识写入、检索和生成链路，后续可替换为 embedding + FAISS/Chroma。
+`astrbot_plugin_simple_rag` 是第一版 RAG 学习实现，先使用本地关键词检索跑通知识写入、检索和生成链路。知识片段较少时会直接将所有片段送入上下文，降低关键词检索漏召回的概率；后续可替换为 embedding + FAISS/Chroma。
 
 文件入库链路：
 

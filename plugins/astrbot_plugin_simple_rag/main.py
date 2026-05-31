@@ -20,7 +20,8 @@ PLUGIN_NAME = "astrbot_plugin_simple_rag"
 KNOWLEDGE_FILE = "knowledge.json"
 MAX_CHUNK_SIZE = 500
 CHUNK_OVERLAP = 80
-TOP_K = 4
+TOP_K = 8
+FULL_CONTEXT_CHUNK_LIMIT = 20
 MAX_FILE_BYTES = 20 * 1024 * 1024
 SUPPORTED_FILE_EXTENSIONS = {".txt", ".md", ".markdown", ".pdf", ".docx"}
 
@@ -150,7 +151,7 @@ class SimpleRagPlugin(Star):
             yield event.plain_result(format_knowledge_list(knowledge))
             return
 
-        matches = retrieve(question, knowledge, TOP_K)
+        matches = select_context(question, knowledge)
         if not matches:
             yield event.plain_result("没有检索到相关资料。可以先用 /learn 补充知识。")
             return
@@ -186,6 +187,42 @@ class SimpleRagPlugin(Star):
         body = extract_command_body(event.message_str, "kblist")
         limit = parse_positive_int(body, default=20, maximum=100)
         yield event.plain_result(format_knowledge_list(knowledge, limit=limit))
+
+    @filter.command("kbsearch")
+    async def kbsearch(self, event: AstrMessageEvent):
+        """调试检索结果。用法：/kbsearch 问题"""
+        question = extract_command_body(event.message_str, "kbsearch")
+        if not question:
+            yield event.plain_result("用法：/kbsearch 问题")
+            return
+
+        knowledge = load_knowledge(self.knowledge_file)
+        matches = retrieve(question, knowledge, TOP_K)
+        if not matches:
+            yield event.plain_result("没有检索到匹配片段。")
+            return
+
+        yield event.plain_result(format_context(matches))
+
+    @filter.command("kbshow")
+    async def kbshow(self, event: AstrMessageEvent):
+        """查看某个知识片段全文。用法：/kbshow k3"""
+        chunk_id = extract_command_body(event.message_str, "kbshow")
+        if not chunk_id:
+            yield event.plain_result("用法：/kbshow k3")
+            return
+
+        knowledge = load_knowledge(self.knowledge_file)
+        chunk = find_chunk(knowledge, chunk_id)
+        if chunk is None:
+            yield event.plain_result(f"没有找到片段：{chunk_id}")
+            return
+
+        yield event.plain_result(
+            f"{chunk.chunk_id} | {chunk.source}\n"
+            f"created_at={chunk.created_at}\n\n"
+            f"{chunk.text}"
+        )
 
     @filter.command("kbclear")
     async def kbclear(self, event: AstrMessageEvent):
@@ -278,6 +315,14 @@ def format_knowledge_list(chunks: list[KnowledgeChunk], limit: int = 20) -> str:
     if len(chunks) > limit:
         lines.append(f"还有 {len(chunks) - limit} 条未显示，可用 /kblist 100 查看更多。")
     return "\n".join(lines)
+
+
+def find_chunk(chunks: list[KnowledgeChunk], chunk_id: str) -> KnowledgeChunk | None:
+    normalized = chunk_id.strip().lower()
+    for chunk in chunks:
+        if chunk.chunk_id.lower() == normalized:
+            return chunk
+    return None
 
 
 def collect_file_refs(event: AstrMessageEvent) -> list[str]:
@@ -500,6 +545,21 @@ def retrieve(
 
     scored.sort(key=lambda item: item[1], reverse=True)
     return scored[:top_k]
+
+
+def select_context(
+    question: str,
+    chunks: list[KnowledgeChunk],
+) -> list[tuple[KnowledgeChunk, float]]:
+    if len(chunks) <= FULL_CONTEXT_CHUNK_LIMIT:
+        matches = retrieve(question, chunks, len(chunks))
+        scored_chunk_ids = {chunk.chunk_id for chunk, _ in matches}
+        for chunk in chunks:
+            if chunk.chunk_id not in scored_chunk_ids:
+                matches.append((chunk, 0.0))
+        return matches
+
+    return retrieve(question, chunks, TOP_K)
 
 
 def tokenize(text: str) -> list[str]:

@@ -76,6 +76,8 @@ docker compose restart astrbot
 /learn AstrBot 是一个支持插件扩展的 AI 机器人框架。
 /ask AstrBot 是什么？
 /kblist
+/kbsearch AstrBot 是什么？
+/kbshow k1
 ```
 
 验证简易知识库问答插件。
