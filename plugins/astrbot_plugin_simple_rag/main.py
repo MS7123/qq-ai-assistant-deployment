@@ -146,6 +146,10 @@ class SimpleRagPlugin(Star):
             yield event.plain_result("知识库还是空的。请先使用 /learn 写入资料。")
             return
 
+        if is_list_knowledge_request(question):
+            yield event.plain_result(format_knowledge_list(knowledge))
+            return
+
         matches = retrieve(question, knowledge, TOP_K)
         if not matches:
             yield event.plain_result("没有检索到相关资料。可以先用 /learn 补充知识。")
@@ -170,6 +174,18 @@ class SimpleRagPlugin(Star):
         knowledge = load_knowledge(self.knowledge_file)
         total_chars = sum(len(item.text) for item in knowledge)
         yield event.plain_result(f"知识库统计：{len(knowledge)} 条片段，约 {total_chars} 个字符。")
+
+    @filter.command("kblist")
+    async def kblist(self, event: AstrMessageEvent):
+        """列出知识库片段摘要。用法：/kblist [数量]"""
+        knowledge = load_knowledge(self.knowledge_file)
+        if not knowledge:
+            yield event.plain_result("知识库还是空的。")
+            return
+
+        body = extract_command_body(event.message_str, "kblist")
+        limit = parse_positive_int(body, default=20, maximum=100)
+        yield event.plain_result(format_knowledge_list(knowledge, limit=limit))
 
     @filter.command("kbclear")
     async def kbclear(self, event: AstrMessageEvent):
@@ -227,6 +243,41 @@ def build_source(event: AstrMessageEvent) -> str:
     sender = get_sender_name() if callable(get_sender_name) else "unknown"
     origin = event.unified_msg_origin or "unknown"
     return f"{sender}@{origin}"
+
+
+def is_list_knowledge_request(question: str) -> bool:
+    normalized = re.sub(r"\s+", "", question.lower())
+    keywords = (
+        "所有知识片段",
+        "全部知识片段",
+        "列出知识片段",
+        "知识库列表",
+        "listchunks",
+        "listknowledge",
+    )
+    return any(keyword in normalized for keyword in keywords)
+
+
+def parse_positive_int(value: str, default: int, maximum: int) -> int:
+    try:
+        parsed = int(value.strip())
+    except (TypeError, ValueError):
+        return default
+    return max(1, min(parsed, maximum))
+
+
+def format_knowledge_list(chunks: list[KnowledgeChunk], limit: int = 20) -> str:
+    shown = chunks[:limit]
+    lines = [f"知识库片段列表：共 {len(chunks)} 条，显示前 {len(shown)} 条。"]
+    for item in shown:
+        preview = item.text.replace("\n", " ").strip()
+        if len(preview) > 120:
+            preview = preview[:117] + "..."
+        lines.append(f"- {item.chunk_id} | {item.source} | {preview}")
+
+    if len(chunks) > limit:
+        lines.append(f"还有 {len(chunks) - limit} 条未显示，可用 /kblist 100 查看更多。")
+    return "\n".join(lines)
 
 
 def collect_file_refs(event: AstrMessageEvent) -> list[str]:

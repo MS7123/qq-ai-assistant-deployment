@@ -22,6 +22,13 @@
 /kbstats
 ```
 
+列出知识片段：
+
+```text
+/kblist
+/kblist 50
+```
+
 清空知识库：
 
 ```text
