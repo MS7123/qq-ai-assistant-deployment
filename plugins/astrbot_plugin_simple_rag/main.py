@@ -10,6 +10,7 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, filter
@@ -50,7 +51,25 @@ class SimpleRagPlugin(Star):
         super().__init__(context)
         self.data_dir = Path(get_astrbot_data_path()) / "plugin_data" / PLUGIN_NAME
         self.knowledge_file = self.data_dir / KNOWLEDGE_FILE
+        self.recent_files: dict[str, list[str]] = {}
         self.data_dir.mkdir(parents=True, exist_ok=True)
+
+    @filter.event_message_type(filter.EventMessageType.ALL, priority=50)
+    async def record_file_message(self, event: AstrMessageEvent):
+        """记录最近收到的文件，便于用户随后用 /learnfile 入库。"""
+        file_refs = collect_file_refs(event)
+        if not file_refs:
+            return
+
+        origin = event.unified_msg_origin or "unknown"
+        self.recent_files[origin] = file_refs
+
+        if not is_plugin_command(event.message_str):
+            files = "\n".join(f"- {item}" for item in file_refs[:5])
+            yield event.plain_result(
+                "已收到文件引用。发送 /learnfile 可导入最近文件。\n"
+                f"{files}"
+            )
 
     @filter.command("learn")
     async def learn(self, event: AstrMessageEvent):
@@ -86,11 +105,13 @@ class SimpleRagPlugin(Star):
         body = extract_command_body(event.message_str, "learnfile")
         if body:
             file_refs.insert(0, body)
+        if not file_refs:
+            file_refs = self.recent_files.get(event.unified_msg_origin or "unknown", [])
 
         if not file_refs:
             yield event.plain_result(
                 "用法：/learnfile /AstrBot/data/temp/example.pdf\n"
-                "也可以发送文件后，在同一条消息中带上 /learnfile。"
+                "也可以先发送文件，再发送 /learnfile。"
             )
             return
 
@@ -144,6 +165,11 @@ class SimpleRagPlugin(Star):
             lines.extend(f"- {error}" for error in errors[:5])
 
         yield event.plain_result("\n".join(lines))
+
+    @filter.command("filedebug")
+    async def filedebug(self, event: AstrMessageEvent):
+        """查看当前消息中的文件组件字段，用于适配不同平台文件消息。"""
+        yield event.plain_result(build_file_debug_report(event))
 
     @filter.command("ask")
     async def ask(self, event: AstrMessageEvent):
@@ -352,6 +378,24 @@ def extract_command_body(message: str, command: str) -> str:
     return text
 
 
+def is_plugin_command(message: str) -> bool:
+    text = (message or "").strip()
+    commands = (
+        "/learn",
+        "/learnfile",
+        "/ask",
+        "/kbstats",
+        "/kblist",
+        "/kbsearch",
+        "/kbshow",
+        "/kbdelete",
+        "/kbdelete_source",
+        "/kbclear",
+        "/filedebug",
+    )
+    return any(text.startswith(command) for command in commands)
+
+
 def build_source(event: AstrMessageEvent) -> str:
     get_sender_name = getattr(event, "get_sender_name", None)
     sender = get_sender_name() if callable(get_sender_name) else "unknown"
@@ -408,17 +452,112 @@ def collect_file_refs(event: AstrMessageEvent) -> list[str]:
     file_refs: list[str] = []
 
     for component in message_chain:
-        component_type = component.__class__.__name__.lower()
-        if "file" not in component_type:
+        file_refs.extend(extract_file_refs_from_component(component))
+
+    for attr_name in ("raw_message", "message", "message_str"):
+        raw_value = getattr(message_obj, attr_name, None) if message_obj else None
+        file_refs.extend(extract_file_refs_from_raw(raw_value))
+
+    return unique_items(file_refs)
+
+
+def extract_file_refs_from_component(component: Any) -> list[str]:
+    refs: list[str] = []
+    component_type = component.__class__.__name__.lower()
+    if "file" not in component_type and "document" not in component_type:
+        return refs
+
+    for attr_name in ("path", "file_path", "local_path", "url", "file", "name"):
+        value = getattr(component, attr_name, None)
+        if isinstance(value, str) and value.strip():
+            refs.append(value.strip())
+
+    refs.extend(extract_file_refs_from_raw(getattr(component, "__dict__", None)))
+    return refs
+
+
+def extract_file_refs_from_raw(raw_value: Any) -> list[str]:
+    refs: list[str] = []
+    if raw_value is None:
+        return refs
+
+    if isinstance(raw_value, dict):
+        raw_type = str(raw_value.get("type", "")).lower()
+        data = raw_value.get("data", raw_value)
+        if raw_type in {"file", "document"} or looks_like_file_payload(data):
+            refs.extend(extract_file_refs_from_mapping(data))
+        for value in raw_value.values():
+            refs.extend(extract_file_refs_from_raw(value))
+    elif isinstance(raw_value, (list, tuple)):
+        for item in raw_value:
+            refs.extend(extract_file_refs_from_raw(item))
+    elif isinstance(raw_value, str):
+        refs.extend(extract_file_refs_from_text(raw_value))
+
+    return refs
+
+
+def looks_like_file_payload(value: Any) -> bool:
+    if not isinstance(value, dict):
+        return False
+    keys = {str(key).lower() for key in value}
+    return bool(keys & {"file", "path", "file_path", "local_path", "url"})
+
+
+def extract_file_refs_from_mapping(value: Any) -> list[str]:
+    if not isinstance(value, dict):
+        return []
+
+    refs: list[str] = []
+    for key in ("path", "file_path", "local_path", "url", "file", "name"):
+        item = value.get(key)
+        if isinstance(item, str) and item.strip():
+            refs.append(item.strip())
+    return refs
+
+
+def extract_file_refs_from_text(text: str) -> list[str]:
+    refs: list[str] = []
+    url_matches = re.findall(r"https?://[^\s\]\)\"']+", text)
+    refs.extend(url_matches)
+
+    path_matches = re.findall(
+        r"(?:/AstrBot/data|data|temp|/tmp)[^\s\]\)\"']+\.(?:txt|md|markdown|pdf|docx|xlsx|xlsm|csv|tsv)",
+        text,
+        flags=re.IGNORECASE,
+    )
+    refs.extend(path_matches)
+    return refs
+
+
+def unique_items(items: list[str]) -> list[str]:
+    seen: set[str] = set()
+    unique: list[str] = []
+    for item in items:
+        normalized = item.strip()
+        if not normalized or normalized in seen:
             continue
+        seen.add(normalized)
+        unique.append(normalized)
+    return unique
 
-        for attr_name in ("path", "file", "file_path", "url"):
-            value = getattr(component, attr_name, None)
-            if isinstance(value, str) and value.strip():
-                file_refs.append(value.strip())
-                break
 
-    return file_refs
+def build_file_debug_report(event: AstrMessageEvent) -> str:
+    message_obj = getattr(event, "message_obj", None)
+    message_chain = getattr(message_obj, "message", []) if message_obj else []
+    refs = collect_file_refs(event)
+    lines = ["文件调试信息：", f"识别到的文件引用：{refs or '无'}"]
+
+    for index, component in enumerate(message_chain, start=1):
+        lines.append(f"[{index}] type={component.__class__.__name__}")
+        attrs = getattr(component, "__dict__", {})
+        for key, value in attrs.items():
+            value_text = repr(value)
+            if len(value_text) > 300:
+                value_text = value_text[:297] + "..."
+            lines.append(f"  {key}={value_text}")
+
+    return "\n".join(lines[:60])
 
 
 def prepare_file_ref(file_ref: str, upload_dir: Path) -> Path:
@@ -457,7 +596,7 @@ def resolve_local_file(file_ref: str) -> Path:
     data_root = Path(get_astrbot_data_path()).resolve()
     path = Path(file_ref).expanduser()
     if not path.is_absolute():
-        path = data_root / path
+        path = resolve_relative_file(path, data_root)
 
     resolved = path.resolve()
     if not is_relative_to(resolved, data_root):
@@ -467,6 +606,18 @@ def resolve_local_file(file_ref: str) -> Path:
     if resolved.stat().st_size > MAX_FILE_BYTES:
         raise ValueError(f"文件过大，当前限制 {MAX_FILE_BYTES // 1024 // 1024}MB")
     return resolved
+
+
+def resolve_relative_file(path: Path, data_root: Path) -> Path:
+    candidates = [
+        data_root / path,
+        data_root / "temp" / path.name,
+        data_root / "plugin_data" / PLUGIN_NAME / "uploads" / path.name,
+    ]
+    for candidate in candidates:
+        if candidate.exists() and candidate.is_file():
+            return candidate
+    return candidates[0]
 
 
 def is_relative_to(path: Path, parent: Path) -> bool:

@@ -18,6 +18,12 @@
 /learnfile /AstrBot/data/temp/example.xlsx
 ```
 
+也可以先发送文件，再发送：
+
+```text
+/learnfile
+```
+
 基于知识库提问：
 
 ```text
@@ -32,6 +38,7 @@
 /kblist 50
 /kbsearch 你的问题
 /kbshow k3
+/filedebug
 ```
 
 删除知识：

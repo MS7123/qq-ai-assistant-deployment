@@ -94,6 +94,7 @@ docker compose up -d
 /learnfile /AstrBot/data/temp/example.pdf
 /learnfile /AstrBot/data/temp/example.docx
 /learnfile /AstrBot/data/temp/example.xlsx
+/learnfile
 ```
 
 知识库管理：
@@ -103,6 +104,7 @@ docker compose up -d
 /kblist
 /kbsearch AstrBot 是什么？
 /kbshow k1
+/filedebug
 /kbdelete k1
 /kbdelete_source example.pdf
 /kbclear confirm
