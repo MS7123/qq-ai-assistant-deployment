@@ -79,6 +79,13 @@ docker compose restart astrbot
 
 验证简易知识库问答插件。
 
+如果要导入文件，可以先把文件放到 AstrBot 数据目录下，再发送：
+
+```text
+/learnfile /AstrBot/data/temp/example.pdf
+/learnfile /AstrBot/data/temp/example.docx
+```
+
 ## 注意事项
 
 - `.env` 和 `data/` 目录包含敏感信息，不应提交到 Git。

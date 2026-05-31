@@ -40,6 +40,16 @@ QQ 用户
 
 `astrbot_plugin_simple_rag` 是第一版 RAG 学习实现，先使用本地关键词检索跑通知识写入、检索和生成链路，后续可替换为 embedding + FAISS/Chroma。
 
+文件入库链路：
+
+```text
+PDF / Word / Markdown / TXT
+  -> 文本抽取
+  -> chunking
+  -> 本地 JSON 知识库
+  -> /ask 检索问答
+```
+
 ## 后续目标架构
 
 ```text
