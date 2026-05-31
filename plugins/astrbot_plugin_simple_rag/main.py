@@ -20,8 +20,9 @@ from astrbot.core.utils.astrbot_path import get_astrbot_data_path
 
 PLUGIN_NAME = "astrbot_plugin_simple_rag"
 KNOWLEDGE_FILE = "knowledge.json"
-MAX_CHUNK_SIZE = 500
-CHUNK_OVERLAP = 80
+MAX_CHUNK_SIZE = 1200
+CHUNK_OVERLAP = 120
+MAX_STRUCTURED_CHUNK_SIZE = 1800
 TOP_K = 8
 FULL_CONTEXT_CHUNK_LIMIT = 20
 MAX_FILE_BYTES = 20 * 1024 * 1024
@@ -130,8 +131,7 @@ class SimpleRagPlugin(Star):
                     file_ref,
                     self.data_dir / "uploads",
                 )
-                text = await asyncio.to_thread(extract_text_from_file, file_path)
-                chunks = chunk_text(text)
+                chunks = await asyncio.to_thread(extract_chunks_from_file, file_path)
                 if not chunks:
                     errors.append(f"{file_path.name}: 未提取到文本")
                     continue
@@ -628,6 +628,15 @@ def is_relative_to(path: Path, parent: Path) -> bool:
         return False
 
 
+def extract_chunks_from_file(path: Path) -> list[str]:
+    suffix = path.suffix.lower()
+    if suffix in {".xlsx", ".xlsm"}:
+        return read_excel_chunks(path)
+    if suffix in {".csv", ".tsv"}:
+        return read_delimited_chunks(path, delimiter="\t" if suffix == ".tsv" else ",")
+    return chunk_text(extract_text_from_file(path))
+
+
 def extract_text_from_file(path: Path) -> str:
     suffix = path.suffix.lower()
     if suffix not in SUPPORTED_FILE_EXTENSIONS:
@@ -719,6 +728,24 @@ def read_excel_text(path: Path) -> str:
     return "\n".join(parts)
 
 
+def read_excel_chunks(path: Path) -> list[str]:
+    try:
+        from openpyxl import load_workbook
+    except ImportError as exc:
+        raise RuntimeError("缺少 Excel 解析依赖，请安装 openpyxl。") from exc
+
+    workbook = load_workbook(str(path), read_only=True, data_only=True)
+    chunks: list[str] = []
+    try:
+        for worksheet in workbook.worksheets:
+            rows = list(worksheet.iter_rows(values_only=True))
+            chunks.extend(rows_to_structured_chunks(rows, sheet_name=worksheet.title))
+    finally:
+        workbook.close()
+
+    return chunks
+
+
 def read_delimited_text(path: Path, delimiter: str) -> str:
     text = read_plain_text(path)
     lines: list[str] = []
@@ -728,6 +755,123 @@ def read_delimited_text(path: Path, delimiter: str) -> str:
         if values:
             lines.append(" | ".join(values))
     return "\n".join(lines)
+
+
+def read_delimited_chunks(path: Path, delimiter: str) -> list[str]:
+    text = read_plain_text(path)
+    rows = list(csv.reader(text.splitlines(), delimiter=delimiter))
+    return rows_to_structured_chunks(rows, sheet_name=path.name)
+
+
+def rows_to_structured_chunks(rows: list[tuple | list], sheet_name: str) -> list[str]:
+    normalized_rows = [
+        [format_cell_value(value) for value in row]
+        for row in rows
+    ]
+    normalized_rows = [row for row in normalized_rows if any(cell for cell in row)]
+    if not normalized_rows:
+        return []
+
+    header_index = find_header_row_index(normalized_rows)
+    headers = build_headers(normalized_rows[header_index])
+    chunks: list[str] = []
+
+    for row_number, row in enumerate(normalized_rows[header_index + 1 :], start=header_index + 2):
+        if not any(row):
+            continue
+        record = format_structured_row(sheet_name, row_number, headers, row)
+        chunks.extend(split_structured_record(record))
+
+    if chunks:
+        return chunks
+
+    fallback = "\n".join(" | ".join(cell for cell in row if cell) for row in normalized_rows)
+    return chunk_text(f"[sheet {sheet_name}]\n{fallback}")
+
+
+def find_header_row_index(rows: list[list[str]]) -> int:
+    best_index = 0
+    best_score = -1
+    header_keywords = {
+        "企业",
+        "公司",
+        "岗位",
+        "职位",
+        "职责",
+        "要求",
+        "人数",
+        "地点",
+        "专业",
+        "薪资",
+    }
+
+    for index, row in enumerate(rows[:10]):
+        non_empty = [cell for cell in row if cell]
+        keyword_score = sum(
+            1 for cell in non_empty for keyword in header_keywords if keyword in cell
+        )
+        score = keyword_score * 3 + len(non_empty)
+        if score > best_score:
+            best_index = index
+            best_score = score
+    return best_index
+
+
+def build_headers(header_row: list[str]) -> list[str]:
+    headers: list[str] = []
+    used: dict[str, int] = {}
+    for index, value in enumerate(header_row, start=1):
+        header = normalize_header(value) or f"列{index}"
+        count = used.get(header, 0) + 1
+        used[header] = count
+        if count > 1:
+            header = f"{header}{count}"
+        headers.append(header)
+    return headers
+
+
+def normalize_header(value: str) -> str:
+    header = re.sub(r"\s+", " ", value).strip()
+    return header.replace("\n", " ")
+
+
+def format_structured_row(
+    sheet_name: str,
+    row_number: int,
+    headers: list[str],
+    row: list[str],
+) -> str:
+    lines = [f"工作表: {sheet_name}", f"行号: {row_number}"]
+    max_len = max(len(headers), len(row))
+    for index in range(max_len):
+        value = row[index] if index < len(row) else ""
+        if not value:
+            continue
+        header = headers[index] if index < len(headers) else f"列{index + 1}"
+        lines.append(f"{header}: {value}")
+    return "\n".join(lines)
+
+
+def split_structured_record(record: str) -> list[str]:
+    if len(record) <= MAX_STRUCTURED_CHUNK_SIZE:
+        return [record]
+
+    lines = record.splitlines()
+    prefix = lines[:2]
+    body = lines[2:]
+    chunks: list[str] = []
+    current = prefix[:]
+
+    for line in body:
+        if sum(len(item) + 1 for item in current) + len(line) > MAX_STRUCTURED_CHUNK_SIZE:
+            chunks.append("\n".join(current))
+            current = prefix + [line]
+        else:
+            current.append(line)
+
+    if current:
+        chunks.append("\n".join(current))
+    return chunks
 
 
 def format_cell_value(value) -> str:

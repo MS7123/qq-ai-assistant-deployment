@@ -60,7 +60,7 @@
 
 - 知识持久化位置：`data/plugin_data/astrbot_plugin_simple_rag/knowledge.json`
 - 文件读取范围：默认只允许读取 `/AstrBot/data` 下的文件
-- Excel 读取方式：按工作表逐行抽取非空单元格，并用 `|` 拼接成文本
+- Excel/CSV 读取方式：自动识别表头，每一行记录生成一个结构化知识片段，保留工作表、行号和字段名
 - 检索方式：本地关键词与中文 bigram 的 BM25-like scoring
 - 生成方式：调用 AstrBot 当前会话配置的大模型 provider
 

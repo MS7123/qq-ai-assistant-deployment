@@ -45,7 +45,7 @@ QQ 用户
 ```text
 PDF / Word / Excel / CSV / Markdown / TXT
   -> 文本抽取
-  -> chunking
+  -> 结构化 chunking
   -> 本地 JSON 知识库
   -> /ask 检索问答
 ```
