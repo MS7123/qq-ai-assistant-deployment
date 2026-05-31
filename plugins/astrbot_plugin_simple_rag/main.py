@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import csv
 import json
 import math
 import re
@@ -23,7 +24,17 @@ CHUNK_OVERLAP = 80
 TOP_K = 8
 FULL_CONTEXT_CHUNK_LIMIT = 20
 MAX_FILE_BYTES = 20 * 1024 * 1024
-SUPPORTED_FILE_EXTENSIONS = {".txt", ".md", ".markdown", ".pdf", ".docx"}
+SUPPORTED_FILE_EXTENSIONS = {
+    ".txt",
+    ".md",
+    ".markdown",
+    ".pdf",
+    ".docx",
+    ".xlsx",
+    ".xlsm",
+    ".csv",
+    ".tsv",
+}
 
 
 @dataclass(frozen=True)
@@ -412,6 +423,10 @@ def extract_text_from_file(path: Path) -> str:
         return read_pdf_text(path)
     if suffix == ".docx":
         return read_docx_text(path)
+    if suffix in {".xlsx", ".xlsm"}:
+        return read_excel_text(path)
+    if suffix in {".csv", ".tsv"}:
+        return read_delimited_text(path, delimiter="\t" if suffix == ".tsv" else ",")
 
     raise ValueError(f"未实现的文件类型：{suffix}")
 
@@ -463,6 +478,47 @@ def read_docx_text(path: Path) -> str:
                 parts.append(" | ".join(cells))
 
     return "\n".join(parts)
+
+
+def read_excel_text(path: Path) -> str:
+    try:
+        from openpyxl import load_workbook
+    except ImportError as exc:
+        raise RuntimeError("缺少 Excel 解析依赖，请安装 openpyxl。") from exc
+
+    workbook = load_workbook(str(path), read_only=True, data_only=True)
+    parts: list[str] = []
+    try:
+        for worksheet in workbook.worksheets:
+            parts.append(f"[sheet {worksheet.title}]")
+            for row in worksheet.iter_rows(values_only=True):
+                values = [format_cell_value(value) for value in row]
+                values = [value for value in values if value]
+                if values:
+                    parts.append(" | ".join(values))
+    finally:
+        workbook.close()
+
+    return "\n".join(parts)
+
+
+def read_delimited_text(path: Path, delimiter: str) -> str:
+    text = read_plain_text(path)
+    lines: list[str] = []
+    reader = csv.reader(text.splitlines(), delimiter=delimiter)
+    for row in reader:
+        values = [cell.strip() for cell in row if cell.strip()]
+        if values:
+            lines.append(" | ".join(values))
+    return "\n".join(lines)
+
+
+def format_cell_value(value) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, float):
+        return f"{value:g}"
+    return str(value).strip()
 
 
 def chunk_text(text: str) -> list[str]:

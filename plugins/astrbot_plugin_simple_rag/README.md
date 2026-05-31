@@ -52,13 +52,14 @@
 支持格式：
 
 ```text
-.txt .md .markdown .pdf .docx
+.txt .md .markdown .pdf .docx .xlsx .xlsm .csv .tsv
 ```
 
 ## 实现说明
 
 - 知识持久化位置：`data/plugin_data/astrbot_plugin_simple_rag/knowledge.json`
 - 文件读取范围：默认只允许读取 `/AstrBot/data` 下的文件
+- Excel 读取方式：按工作表逐行抽取非空单元格，并用 `|` 拼接成文本
 - 检索方式：本地关键词与中文 bigram 的 BM25-like scoring
 - 生成方式：调用 AstrBot 当前会话配置的大模型 provider
 

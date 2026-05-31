@@ -43,7 +43,7 @@ QQ 用户
 文件入库链路：
 
 ```text
-PDF / Word / Markdown / TXT
+PDF / Word / Excel / CSV / Markdown / TXT
   -> 文本抽取
   -> chunking
   -> 本地 JSON 知识库

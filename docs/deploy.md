@@ -87,6 +87,7 @@ docker compose restart astrbot
 ```text
 /learnfile /AstrBot/data/temp/example.pdf
 /learnfile /AstrBot/data/temp/example.docx
+/learnfile /AstrBot/data/temp/example.xlsx
 ```
 
 ## 注意事项
