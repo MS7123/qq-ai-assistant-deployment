@@ -28,6 +28,18 @@ QQ 用户
 
 `astrbot_plugin_server_status` 使用 Python 标准库读取 `/proc/stat`、`/proc/meminfo`、磁盘使用率，并通过 Docker Unix socket 查询容器运行状态。
 
+```text
+QQ 用户
+  -> /learn 写入资料
+  -> 本地 JSON 知识库
+  -> /ask 提问
+  -> 关键词检索 Top-K 片段
+  -> AstrBot LLM Provider
+  -> 基于资料生成回答
+```
+
+`astrbot_plugin_simple_rag` 是第一版 RAG 学习实现，先使用本地关键词检索跑通知识写入、检索和生成链路，后续可替换为 embedding + FAISS/Chroma。
+
 ## 后续目标架构
 
 ```text

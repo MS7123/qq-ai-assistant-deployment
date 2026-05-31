@@ -14,4 +14,5 @@
 - 基于 NapCat 接入 QQ 消息，通过 OneBot v11 / WebSocket 与 AstrBot 建立通信，实现 QQ AI 机器人对话能力。
 - 接入 DeepSeek API 实现大模型问答，并通过环境变量隔离账号、token 和服务配置。
 - 基于 AstrBot 插件机制开发 `/status` 服务器状态查询工具，支持实时查看 CPU、内存、磁盘和 Docker 容器运行状态。
+- 开发简易 RAG 知识库问答插件，支持通过 `/learn` 写入资料、关键词检索 Top-K 知识片段，并调用 AstrBot 当前大模型生成带引用的回答。
 - 规划 RAG 知识库、Agent 工具调用和 MCP 工具服务扩展方向，提升项目与 AI Agent 实习岗位的匹配度。

@@ -52,6 +52,7 @@ docker compose up -d
 
 ```text
 plugins/astrbot_plugin_server_status
+plugins/astrbot_plugin_simple_rag
 ```
 
 更新插件后，在服务器执行：
@@ -68,6 +69,15 @@ docker compose restart astrbot
 ```
 
 验证机器人是否能返回 CPU、内存、磁盘和容器状态。
+
+也可以发送：
+
+```text
+/learn AstrBot 是一个支持插件扩展的 AI 机器人框架。
+/ask AstrBot 是什么？
+```
+
+验证简易知识库问答插件。
 
 ## 注意事项
 

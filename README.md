@@ -55,6 +55,7 @@ docker compose ps
 ## 后续开发方向
 
 - 已新增 `astrbot_plugin_server_status` 插件，支持通过 `/status` 查询服务器与 Docker 容器状态。
+- 新增 `astrbot_plugin_simple_rag` 插件，支持 `/learn` 写入知识、`/ask` 检索知识并调用当前大模型回答。
 - 封装统一 LLM Provider，支持 DeepSeek、OpenAI-compatible API、Qwen 等模型。
 - 增加 RAG 知识库问答能力，包括文档解析、chunking、embedding、向量检索和引用返回。
 - 设计 Agent 工具调用模块，支持文件检索、文档总结、服务器状态查询等工具。

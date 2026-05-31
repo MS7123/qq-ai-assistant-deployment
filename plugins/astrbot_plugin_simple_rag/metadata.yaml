@@ -1,0 +1,10 @@
+name: "astrbot_plugin_simple_rag"
+display_name: "简易知识库问答"
+author: "MS7123"
+version: "0.1.0"
+desc: "通过 /learn 写入知识，通过 /ask 基于本地知识库检索并调用当前 AstrBot 大模型回答。"
+short_desc: "本地知识库 RAG 问答"
+repo: "https://github.com/MS7123/qq-ai-assistant-deployment"
+astrbot_version: ">=4.8.0"
+support_platforms:
+  - aiocqhttp
