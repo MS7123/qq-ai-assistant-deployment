@@ -46,8 +46,32 @@ docker compose pull
 docker compose up -d
 ```
 
+## 插件更新
+
+当前仓库包含服务器状态查询插件：
+
+```text
+plugins/astrbot_plugin_server_status
+```
+
+更新插件后，在服务器执行：
+
+```bash
+git pull
+docker compose restart astrbot
+```
+
+然后在 QQ 中发送：
+
+```text
+/status
+```
+
+验证机器人是否能返回 CPU、内存、磁盘和容器状态。
+
 ## 注意事项
 
 - `.env` 和 `data/` 目录包含敏感信息，不应提交到 Git。
 - NapCat 首次登录后的状态文件会保存在 `data/napcat`。
 - AstrBot 配置和插件数据会保存在 `data/astrbot`。
+- `docker-compose.yml` 为了查询容器状态，将 `/var/run/docker.sock` 只读挂载到 AstrBot 容器。该能力适合学习和个人服务器使用，生产环境需要更严格的权限隔离。

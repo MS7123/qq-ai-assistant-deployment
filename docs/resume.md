@@ -13,4 +13,5 @@
 - 使用 Docker Compose 编排 AstrBot、NapCat、Shipyard 多容器服务，完成云服务器部署与端口映射配置。
 - 基于 NapCat 接入 QQ 消息，通过 OneBot v11 / WebSocket 与 AstrBot 建立通信，实现 QQ AI 机器人对话能力。
 - 接入 DeepSeek API 实现大模型问答，并通过环境变量隔离账号、token 和服务配置。
+- 基于 AstrBot 插件机制开发 `/status` 服务器状态查询工具，支持实时查看 CPU、内存、磁盘和 Docker 容器运行状态。
 - 规划 RAG 知识库、Agent 工具调用和 MCP 工具服务扩展方向，提升项目与 AI Agent 实习岗位的匹配度。

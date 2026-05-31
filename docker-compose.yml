@@ -12,7 +12,9 @@ services:
       - TZ=${TZ:-Asia/Shanghai}
     volumes:
       - ./data/astrbot:/AstrBot/data
+      - ./plugins/astrbot_plugin_server_status:/AstrBot/data/plugins/astrbot_plugin_server_status:ro
       - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - astrbot_network
 

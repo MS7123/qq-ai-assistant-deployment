@@ -1,0 +1,10 @@
+name: "astrbot_plugin_server_status"
+display_name: "服务器状态查询"
+author: "MS7123"
+version: "0.1.0"
+desc: "通过 /status 指令查询服务器 CPU、内存、磁盘和 Docker 容器运行状态。"
+short_desc: "查询服务器与容器状态"
+repo: "https://github.com/MS7123/qq-ai-assistant-deployment"
+astrbot_version: ">=4.8.0"
+support_platforms:
+  - aiocqhttp
