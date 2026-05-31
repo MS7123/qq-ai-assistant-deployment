@@ -246,6 +246,72 @@ class SimpleRagPlugin(Star):
         save_knowledge(self.knowledge_file, [])
         yield event.plain_result("知识库已清空。")
 
+    @filter.command("kbdelete")
+    async def kbdelete(self, event: AstrMessageEvent):
+        """按片段 ID 删除知识。用法：/kbdelete k3 k4"""
+        body = extract_command_body(event.message_str, "kbdelete")
+        chunk_ids = [item.strip().lower() for item in body.split() if item.strip()]
+        if not chunk_ids:
+            yield event.plain_result("用法：/kbdelete k3 k4")
+            return
+
+        knowledge = load_knowledge(self.knowledge_file)
+        if not knowledge:
+            yield event.plain_result("知识库还是空的。")
+            return
+
+        targets = set(chunk_ids)
+        kept: list[KnowledgeChunk] = []
+        deleted: list[KnowledgeChunk] = []
+        for chunk in knowledge:
+            if chunk.chunk_id.lower() in targets:
+                deleted.append(chunk)
+            else:
+                kept.append(chunk)
+
+        if not deleted:
+            yield event.plain_result("没有找到要删除的片段：" + "、".join(chunk_ids))
+            return
+
+        save_knowledge(self.knowledge_file, kept)
+        deleted_ids = "、".join(chunk.chunk_id for chunk in deleted)
+        yield event.plain_result(
+            f"已删除 {len(deleted)} 条片段：{deleted_ids}\n"
+            f"当前剩余 {len(kept)} 条。"
+        )
+
+    @filter.command("kbdelete_source")
+    async def kbdelete_source(self, event: AstrMessageEvent):
+        """按来源删除知识。用法：/kbdelete_source example.pdf"""
+        keyword = extract_command_body(event.message_str, "kbdelete_source").strip()
+        if not keyword:
+            yield event.plain_result("用法：/kbdelete_source example.pdf")
+            return
+
+        knowledge = load_knowledge(self.knowledge_file)
+        if not knowledge:
+            yield event.plain_result("知识库还是空的。")
+            return
+
+        kept: list[KnowledgeChunk] = []
+        deleted: list[KnowledgeChunk] = []
+        normalized_keyword = keyword.lower()
+        for chunk in knowledge:
+            if normalized_keyword in chunk.source.lower():
+                deleted.append(chunk)
+            else:
+                kept.append(chunk)
+
+        if not deleted:
+            yield event.plain_result(f"没有找到来源包含 `{keyword}` 的片段。")
+            return
+
+        save_knowledge(self.knowledge_file, kept)
+        yield event.plain_result(
+            f"已删除来源包含 `{keyword}` 的 {len(deleted)} 条片段。\n"
+            f"当前剩余 {len(kept)} 条。"
+        )
+
     async def generate_answer(
         self,
         event: AstrMessageEvent,

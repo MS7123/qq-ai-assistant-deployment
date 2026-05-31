@@ -1,6 +1,6 @@
 # astrbot_plugin_simple_rag
 
-一个最小可用的本地知识库 RAG 插件，用于学习文档写入、检索增强生成和 AstrBot 大模型调用。
+一个最小可用的本地知识库 RAG 插件，用于学习文档写入、文件解析、检索增强生成和 AstrBot 大模型调用。
 
 ## 指令
 
@@ -10,46 +10,40 @@
 /learn 成都天开智能科技有限公司 AI 实习生岗位要求包括 Python、Agent、RAG、MCP、Docker 和 WebSocket。
 ```
 
+读取文件入库：
+
+```text
+/learnfile /AstrBot/data/temp/example.pdf
+/learnfile /AstrBot/data/temp/example.docx
+/learnfile /AstrBot/data/temp/example.xlsx
+```
+
 基于知识库提问：
 
 ```text
 /ask 这个岗位需要学习哪些技术？
 ```
 
-查看统计：
+查看和调试：
 
 ```text
 /kbstats
-```
-
-列出知识片段：
-
-```text
 /kblist
 /kblist 50
-```
-
-调试检索：
-
-```text
 /kbsearch 你的问题
 /kbshow k3
 ```
 
-清空知识库：
+删除知识：
 
 ```text
+/kbdelete k3
+/kbdelete k3 k4 k5
+/kbdelete_source example.pdf
 /kbclear confirm
 ```
 
-读取文件入库：
-
-```text
-/learnfile /AstrBot/data/temp/example.pdf
-/learnfile /AstrBot/data/temp/example.docx
-```
-
-支持格式：
+## 支持格式
 
 ```text
 .txt .md .markdown .pdf .docx .xlsx .xlsm .csv .tsv

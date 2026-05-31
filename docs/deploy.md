@@ -12,7 +12,7 @@
 
 ```bash
 git clone <repo-url>
-cd qq-ai-assistant
+cd qq-ai-assistant-deployment
 ```
 
 2. 创建环境变量文件。
@@ -36,6 +36,33 @@ docker compose logs -f astrbot
 docker compose logs -f napcat
 ```
 
+## 服务器更新
+
+如果服务器访问 GitHub 不稳定，使用 ZIP 更新：
+
+```bash
+cd /root
+
+rm -f qq-ai-assistant-deployment-main.zip
+rm -rf qq-ai-assistant-deployment-main
+
+wget -O qq-ai-assistant-deployment-main.zip https://codeload.github.com/MS7123/qq-ai-assistant-deployment/zip/refs/heads/main
+
+unzip -q qq-ai-assistant-deployment-main.zip
+
+cp -a qq-ai-assistant-deployment-main/plugins ./qq-ai-assistant-deployment/
+cp -a qq-ai-assistant-deployment-main/docker-compose.yml ./qq-ai-assistant-deployment/docker-compose.yml
+cp -a qq-ai-assistant-deployment-main/README.md ./qq-ai-assistant-deployment/README.md
+cp -a qq-ai-assistant-deployment-main/docs ./qq-ai-assistant-deployment/
+
+rm -f qq-ai-assistant-deployment-main.zip
+rm -rf qq-ai-assistant-deployment-main
+
+cd /root/qq-ai-assistant-deployment
+docker compose up -d
+docker compose restart astrbot
+```
+
 ## 常用命令
 
 ```bash
@@ -46,48 +73,39 @@ docker compose pull
 docker compose up -d
 ```
 
-## 插件更新
+## 插件测试
 
-当前仓库包含服务器状态查询插件：
-
-```text
-plugins/astrbot_plugin_server_status
-plugins/astrbot_plugin_simple_rag
-```
-
-更新插件后，在服务器执行：
-
-```bash
-git pull
-docker compose restart astrbot
-```
-
-然后在 QQ 中发送：
+服务器状态：
 
 ```text
 /status
 ```
 
-验证机器人是否能返回 CPU、内存、磁盘和容器状态。
-
-也可以发送：
+知识库写入和问答：
 
 ```text
 /learn AstrBot 是一个支持插件扩展的 AI 机器人框架。
 /ask AstrBot 是什么？
-/kblist
-/kbsearch AstrBot 是什么？
-/kbshow k1
 ```
 
-验证简易知识库问答插件。
-
-如果要导入文件，可以先把文件放到 AstrBot 数据目录下，再发送：
+文件入库：
 
 ```text
 /learnfile /AstrBot/data/temp/example.pdf
 /learnfile /AstrBot/data/temp/example.docx
 /learnfile /AstrBot/data/temp/example.xlsx
+```
+
+知识库管理：
+
+```text
+/kbstats
+/kblist
+/kbsearch AstrBot 是什么？
+/kbshow k1
+/kbdelete k1
+/kbdelete_source example.pdf
+/kbclear confirm
 ```
 
 ## 注意事项
