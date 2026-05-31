@@ -16,4 +16,4 @@
 - 基于 AstrBot 插件机制开发 `/status` 服务器状态查询工具，支持实时查看 CPU、内存、磁盘和 Docker 容器运行状态。
 - 开发简易 RAG 知识库问答插件，支持通过 `/learn` 写入资料，并可读取 TXT、Markdown、PDF、Word、Excel、CSV 文档完成文本抽取、结构化 chunking、片段增删管理、检索调试、Top-K 检索和大模型问答。
 - 开发 Agent 工具调用插件，支持通过自然语言调用服务器状态、时间、计算器和知识库检索等工具，并由大模型整合工具结果生成回复。
-- 规划将核心工具封装为 MCP Server，实现工具能力标准化暴露。
+- 基于 MCP Python SDK 开发 stdio MCP Server，将服务器状态、知识库查询、时间和计算器封装为标准 MCP tools，实现工具能力标准化暴露。

@@ -56,6 +56,17 @@ QQ 用户自然语言
 
 `astrbot_plugin_agent_tools` 先以 `/agent` 显式触发，避免普通聊天误调用工具。当前版本只开放低风险工具，不提供任意 shell 执行或任意文件写入。
 
+MCP 工具服务：
+
+```text
+MCP Client
+  -> qq_ai_assistant_mcp
+  -> server_status / knowledge_search / datetime / calculator
+  -> 标准 MCP tool result
+```
+
+`mcp_server` 使用 stdio transport，适合被本机 MCP 客户端拉起。它复用当前项目的数据目录读取知识库，只提供只读工具和安全计算器。
+
 ## 后续目标架构
 
 ```text
@@ -78,4 +89,4 @@ QQ 用户
 - AstrBot 插件化扩展
 - RAG 知识库问答
 - Agent 工具调用
-- MCP 后续扩展设计
+- MCP 工具服务

@@ -120,6 +120,16 @@ Agent 工具调用：
 /agent 查一下知识库里 AI 实习生相关内容
 ```
 
+MCP Server 本地运行：
+
+```bash
+cd /root/qq-ai-assistant-deployment
+pip install -r mcp_server/requirements.txt
+ASTRBOT_DATA_DIR=/root/qq-ai-assistant-deployment/data/astrbot python mcp_server/server.py
+```
+
+stdio MCP Server 通常由 MCP 客户端自动拉起，不需要作为常驻 Web 服务运行。
+
 ## 注意事项
 
 - `.env` 和 `data/` 目录包含敏感信息，不应提交到 Git。
