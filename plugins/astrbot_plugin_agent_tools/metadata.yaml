@@ -1,0 +1,10 @@
+name: "astrbot_plugin_agent_tools"
+display_name: "Agent 工具调用"
+author: "MS7123"
+version: "0.1.0"
+desc: "通过 /agent 使用自然语言调用服务器状态、知识库检索、时间和计算工具。"
+short_desc: "自然语言工具调用"
+repo: "https://github.com/MS7123/qq-ai-assistant-deployment"
+astrbot_version: ">=4.8.0"
+support_platforms:
+  - aiocqhttp

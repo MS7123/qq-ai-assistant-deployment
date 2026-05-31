@@ -110,6 +110,16 @@ docker compose up -d
 /kbclear confirm
 ```
 
+Agent 工具调用：
+
+```text
+/tools
+/agent 现在服务器状态怎么样
+/agent 计算 128*36
+/agent 现在几点
+/agent 查一下知识库里 AI 实习生相关内容
+```
+
 ## 注意事项
 
 - `.env` 和 `data/` 目录包含敏感信息，不应提交到 Git。

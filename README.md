@@ -1,10 +1,10 @@
 # QQ AI Assistant
 
-基于 Docker 部署 AstrBot、NapCat 和 Shipyard，并接入大模型 API 实现 QQ AI 机器人。
+基于 Docker Compose 部署 AstrBot、NapCat 和 Shipyard，并接入 DeepSeek API 实现 QQ AI 机器人。
 
 ## 项目目标
 
-当前版本沉淀可复现部署配置。后续计划在此基础上扩展多模型调用、RAG 知识库问答、Agent 工具调用和 MCP 工具接入能力。
+当前项目从可复现部署开始，逐步扩展为具备 RAG 知识库、文件入库、服务器状态查询和 Agent 工具调用能力的 QQ AI 助手。
 
 ## 技术栈
 
@@ -13,6 +13,8 @@
 - Shipyard: AstrBot 沙盒能力
 - Docker Compose: 服务编排与云端部署
 - DeepSeek API: 大模型对话能力
+- RAG: 本地知识库问答
+- Agent Tools: 自然语言工具调用
 
 ## 快速开始
 
@@ -48,16 +50,18 @@ docker compose ps
 - NapCat OneBot: `6099`
 - AstrBot OneBot WebSocket: `6199`
 
+## 插件能力
+
+- `astrbot_plugin_server_status`: 通过 `/status` 查询服务器与 Docker 容器状态。
+- `astrbot_plugin_simple_rag`: 通过 `/learn`、`/learnfile`、`/ask` 实现知识库写入、文件解析和问答。
+- `astrbot_plugin_agent_tools`: 通过 `/agent` 使用自然语言调用服务器状态、知识库检索、时间和计算工具。
+
 ## 安全说明
 
 不要将 `.env`、`data/`、日志、数据库、QQ 登录状态、API Key 或 token 提交到 Git。
 
-## 后续开发方向
+## 后续方向
 
-- 已新增 `astrbot_plugin_server_status` 插件，支持通过 `/status` 查询服务器与 Docker 容器状态。
-- 新增 `astrbot_plugin_simple_rag` 插件，支持 `/learn` 写入知识、`/ask` 检索知识并调用当前大模型回答。
-- 封装统一 LLM Provider，支持 DeepSeek、OpenAI-compatible API、Qwen 等模型。
-- 增加 RAG 知识库问答能力，包括文档解析、chunking、embedding、向量检索和引用返回。
-- 设计 Agent 工具调用模块，支持文件检索、文档总结、服务器状态查询等工具。
-- 接入 MCP，将本地工具能力标准化暴露给 AI 助手。
-- 补充部署文档、架构文档和项目复盘文档，用于简历展示。
+- 将 RAG 检索从关键词升级为 embedding + vector database。
+- 将 Agent 工具封装为 MCP Server。
+- 增加更完善的工具权限控制、审计日志和工具调用记录。

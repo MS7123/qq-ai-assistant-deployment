@@ -15,7 +15,9 @@ QQ 用户
 
 Shipyard 为 AstrBot 提供沙盒执行能力，适合后续扩展工具调用和代码执行类能力。
 
-## 当前插件能力
+## 插件能力
+
+服务器状态查询：
 
 ```text
 QQ 用户
@@ -26,29 +28,33 @@ QQ 用户
   -> 状态报告
 ```
 
-`astrbot_plugin_server_status` 使用 Python 标准库读取 `/proc/stat`、`/proc/meminfo`、磁盘使用率，并通过 Docker Unix socket 查询容器运行状态。
+RAG 知识库问答：
 
 ```text
 QQ 用户
-  -> /learn 写入资料
+  -> /learn 或 /learnfile
+  -> 文本抽取
+  -> 结构化 chunking
   -> 本地 JSON 知识库
-  -> /ask 提问
-  -> 关键词检索 Top-K 片段
+  -> /ask
+  -> Top-K 检索
   -> AstrBot LLM Provider
   -> 基于资料生成回答
 ```
 
-`astrbot_plugin_simple_rag` 是第一版 RAG 学习实现，先使用本地关键词检索跑通知识写入、检索和生成链路。知识片段较少时会直接将所有片段送入上下文，降低关键词检索漏召回的概率；后续可替换为 embedding + FAISS/Chroma。
-
-文件入库链路：
+Agent 工具调用：
 
 ```text
-PDF / Word / Excel / CSV / Markdown / TXT
-  -> 文本抽取
-  -> 结构化 chunking
-  -> 本地 JSON 知识库
-  -> /ask 检索问答
+QQ 用户自然语言
+  -> /agent
+  -> 工具路由
+  -> server_status / datetime / calculator / knowledge_search
+  -> 工具结果
+  -> LLM 总结
+  -> QQ 回复
 ```
+
+`astrbot_plugin_agent_tools` 先以 `/agent` 显式触发，避免普通聊天误调用工具。当前版本只开放低风险工具，不提供任意 shell 执行或任意文件写入。
 
 ## 后续目标架构
 
@@ -70,4 +76,6 @@ QQ 用户
 - OneBot v11 协议接入
 - 大模型 API 调用
 - AstrBot 插件化扩展
-- RAG、Agent、MCP 后续扩展设计
+- RAG 知识库问答
+- Agent 工具调用
+- MCP 后续扩展设计
