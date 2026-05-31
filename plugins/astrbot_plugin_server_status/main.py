@@ -175,11 +175,51 @@ def docker_get(path: str) -> tuple[int, str]:
                 break
             chunks.append(chunk)
 
-    raw_response = b"".join(chunks).decode("utf-8", errors="replace")
-    head, _, body = raw_response.partition("\r\n\r\n")
+    raw_response = b"".join(chunks)
+    head_bytes, _, body_bytes = raw_response.partition(b"\r\n\r\n")
+    head = head_bytes.decode("utf-8", errors="replace")
     status_line = head.splitlines()[0]
     status_code = int(status_line.split()[1])
+    headers = parse_headers(head)
+    if headers.get("transfer-encoding", "").lower() == "chunked":
+        body_bytes = decode_chunked_body(body_bytes)
+    body = body_bytes.decode("utf-8", errors="replace")
     return status_code, body
+
+
+def parse_headers(head: str) -> dict[str, str]:
+    headers: dict[str, str] = {}
+    for line in head.splitlines()[1:]:
+        if ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        headers[key.strip().lower()] = value.strip()
+    return headers
+
+
+def decode_chunked_body(body: bytes) -> bytes:
+    decoded = bytearray()
+    position = 0
+
+    while position < len(body):
+        line_end = body.find(b"\r\n", position)
+        if line_end == -1:
+            break
+
+        size_line = body[position:line_end].split(b";", 1)[0].strip()
+        try:
+            chunk_size = int(size_line, 16)
+        except ValueError:
+            break
+
+        position = line_end + 2
+        if chunk_size == 0:
+            break
+
+        decoded.extend(body[position : position + chunk_size])
+        position += chunk_size + 2
+
+    return bytes(decoded)
 
 
 def format_percent(value: float | None) -> str:
