@@ -73,6 +73,29 @@ docker compose pull
 docker compose up -d
 ```
 
+## NapCat 保活
+
+NapCat 可能出现容器仍在运行但 QQ 账号变为离线的情况。仓库提供了一个轻量 watchdog，用于检测最近日志中的离线或网络异常并重启 NapCat：
+
+```bash
+chmod +x /root/qq-ai-assistant-deployment/scripts/watch-napcat.sh
+crontab -e
+```
+
+加入：
+
+```cron
+*/10 * * * * /root/qq-ai-assistant-deployment/scripts/watch-napcat.sh
+```
+
+查看 watchdog 日志：
+
+```bash
+tail -f /root/qq-ai-assistant-deployment/data/napcat-watchdog.log
+```
+
+这只能缩短离线后的恢复时间，不能保证 QQ 在云服务器上永久不掉线。
+
 ## 插件测试
 
 服务器状态：
