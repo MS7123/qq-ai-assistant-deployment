@@ -96,6 +96,8 @@ tail -f /root/qq-ai-assistant-deployment/data/napcat-watchdog.log
 
 这只能缩短离线后的恢复时间，不能保证 QQ 在云服务器上永久不掉线。
 
+如果 QQ 登录设备管理里反复出现新的 Linux 设备，先不要频繁重启或重新扫码。当前 Compose 已固定 NapCat 容器 hostname 为 `napcat-qq`，并显式持久化 `/app/.config/QQ`、`/app/napcat/config`、`/app/napcat/cache`。完成一次安全验证后，保留当前在线的 `napcat-qq` 设备，观察 24 小时；稳定后再删除旧的容器 ID 设备记录。
+
 ## 插件测试
 
 服务器状态：

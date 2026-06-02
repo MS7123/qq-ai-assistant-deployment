@@ -46,6 +46,7 @@ services:
   napcat:
     image: mlikiowa/napcat-docker:latest
     container_name: napcat
+    hostname: napcat-qq
     restart: always
     ports:
       - "${NAPCAT_ONEBOT_PORT:-6099}:6099"
